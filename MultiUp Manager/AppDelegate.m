@@ -19,9 +19,11 @@
 @synthesize hash = _hash;
 @synthesize size = _size;
 @synthesize type = _type;
-@synthesize md5 = _md5;
-@synthesize sha = _sha;
 @synthesize url = _url;
+@synthesize status = _status;
+@synthesize status2 = _status2;
+@synthesize panel = _panel;
+@synthesize progres = _progres;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
@@ -34,6 +36,18 @@
     
     if ([pref stringForKey:@"login"] != nil) {
         [_password setStringValue:[pref stringForKey:@"password"]];
+    }
+    
+    if (![_password.stringValue isEqualToString:@""] && ![_login.stringValue isEqualToString:@""]) {
+        [self connexion:self];
+    }
+}
+
+- (IBAction)openLink:(id)sender {
+    if (![[_url stringValue] isEqualToString:@""]) {
+        NSURL *url = [NSURL URLWithString:[_url stringValue]];
+        if( ![[NSWorkspace sharedWorkspace] openURL:url] )
+            NSLog(@"Failed to open url: %@",[url description]);
     }
 }
 
@@ -49,30 +63,16 @@
         
         if ([[responseData objectForKey:@"error"] isEqualToString:@"success"]) {
             user = [responseData objectForKey:@"user"];
-            
-            NSAlert *alert = [[NSAlert alloc] init];
-            [alert addButtonWithTitle:@"OK"];
-            [alert setMessageText:NSLocalizedString(@"Success", nil)];
-            [alert setInformativeText:NSLocalizedString(@"Connexion réussi.", nil)];
-            [alert setAlertStyle:NSInformationalAlertStyle];
-            [alert runModal];
+            [_status setImage:[NSImage imageNamed:@"NSStatusAvailable"]];
+            [_status2 setImage:[NSImage imageNamed:@"NSStatusAvailable"]];
         } else {
-            NSAlert *alert = [[NSAlert alloc] init];
-            [alert addButtonWithTitle:@"OK"];
-            [alert setMessageText:NSLocalizedString(@"Error", nil)];
-            [alert setInformativeText:NSLocalizedString([responseData objectForKey:@"error"], nil)];
-            [alert setAlertStyle:NSInformationalAlertStyle];
-            [alert runModal];
+            [_status setImage:[NSImage imageNamed:@"NSStatusUnavailable"]];
+            [_status2 setImage:[NSImage imageNamed:@"NSStatusUnavailable"]];
         }
     } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
         NSLog(@"Error: %@", error);
-        
-        NSAlert *alert = [[NSAlert alloc] init];
-        [alert addButtonWithTitle:@"OK"];
-        [alert setMessageText:NSLocalizedString(@"Error", nil)];
-        [alert setInformativeText:NSLocalizedString(@"Impossible de se connecter avec ses identifiants.", nil)];
-        [alert setAlertStyle:NSInformationalAlertStyle];
-        [alert runModal];
+        [_status setImage:[NSImage imageNamed:@"NSStatusUnavailable"]];
+        [_status2 setImage:[NSImage imageNamed:@"NSStatusUnavailable"]];
     }];
 }
 
@@ -96,7 +96,7 @@
     // Can't select a directory
     [openDlg setCanChooseDirectories:NO];
     
-    if ( [openDlg runModal] == NSOKButton )
+    if ([openDlg runModal] == NSOKButton)
     {
         // Get an array containing the full filenames of all
         // files and directories selected.
@@ -112,9 +112,10 @@
     [_hash setStringValue:@""];
     [_size setStringValue:@""];
     [_type setStringValue:@""];
-    [_md5 setStringValue:@""];
-    [_sha setStringValue:@""];
     [_url setStringValue:@""];
+    [_panel makeKeyAndOrderFront:self];
+    [_panel setAlphaValue:0.7];
+    [_progres startAnimation:nil];
     [self getFastestServer];
 }
 
@@ -128,13 +129,6 @@
         if ([[responseData objectForKey:@"error"] isEqualToString:@"success"]) {
             fastestServer = [responseData objectForKey:@"server"];
             [self getListHosts];
-        } else {
-            NSAlert *alert = [[NSAlert alloc] init];
-            [alert addButtonWithTitle:@"OK"];
-            [alert setMessageText:NSLocalizedString(@"Error", nil)];
-            [alert setInformativeText:NSLocalizedString([responseData objectForKey:@"error"], nil)];
-            [alert setAlertStyle:NSInformationalAlertStyle];
-            [alert runModal];
         }
     } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
         NSLog(@"Error: %@", error);
@@ -151,13 +145,6 @@
         if ([[responseData objectForKey:@"error"] isEqualToString:@"success"]) {
             hosts = [responseData objectForKey:@"hosts"];
             [self upload:fastestServer UserId:user Hosters:hosts];
-        } else {
-            NSAlert *alert = [[NSAlert alloc] init];
-            [alert addButtonWithTitle:@"OK"];
-            [alert setMessageText:NSLocalizedString(@"Error", nil)];
-            [alert setInformativeText:NSLocalizedString([responseData objectForKey:@"error"], nil)];
-            [alert setAlertStyle:NSInformationalAlertStyle];
-            [alert runModal];
         }
     } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
         NSLog(@"Error: %@", error);
@@ -174,13 +161,6 @@
         NSDictionary *responseData = [NSJSONSerialization JSONObjectWithData:responseObject options:0 error:nil];
         if ([[responseData objectForKey:@"error"] isEqualToString:@"success"]) {
             files = [responseData objectForKey:@"files"];
-        } else {
-            NSAlert *alert = [[NSAlert alloc] init];
-            [alert addButtonWithTitle:@"OK"];
-            [alert setMessageText:NSLocalizedString(@"Error", nil)];
-            [alert setInformativeText:NSLocalizedString([responseData objectForKey:@"error"], nil)];
-            [alert setAlertStyle:NSInformationalAlertStyle];
-            [alert runModal];
         }
     } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
         NSLog(@"Error: %@", error);
@@ -197,13 +177,6 @@
         NSDictionary *responseData = [NSJSONSerialization JSONObjectWithData:responseObject options:0 error:nil];
         if ([[responseData objectForKey:@"error"] isEqualToString:@"success"]) {
             checkLinkDico = responseData;
-        } else {
-            NSAlert *alert = [[NSAlert alloc] init];
-            [alert addButtonWithTitle:@"OK"];
-            [alert setMessageText:NSLocalizedString(@"Error", nil)];
-            [alert setInformativeText:NSLocalizedString([responseData objectForKey:@"error"], nil)];
-            [alert setAlertStyle:NSInformationalAlertStyle];
-            [alert runModal];
         }
     } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
         NSLog(@"Error: %@", error);
@@ -226,19 +199,16 @@
         if (![responseString isEqualToString:@"[]"] || responseString != nil) {
             NSArray *responseData = [NSJSONSerialization JSONObjectWithData:responseObject options:0 error:nil];
             upload = [responseData objectAtIndex:0];
-            
+            [_panel orderOut:self];
             [_name setStringValue:[upload objectForKey:@"name"]];
             [_hash setStringValue:[upload objectForKey:@"hash"]];
             [_size setStringValue:[upload objectForKey:@"size"]];
             [_type setStringValue:[upload objectForKey:@"type"]];
-            [_md5 setStringValue:[upload objectForKey:@"md5"]];
-            [_sha setStringValue:[upload objectForKey:@"sha"]];
             [_url setStringValue:[upload objectForKey:@"url"]];
-        } else {
-            NSLog(@"Erreur upload");
         }
     } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
         NSLog(@"Error: %@", error);
+        [_panel orderOut:self];
     }];
 }
 

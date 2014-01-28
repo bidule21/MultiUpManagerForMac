@@ -26,10 +26,13 @@
 @property (weak) IBOutlet NSTextField *hash;
 @property (weak) IBOutlet NSTextField *size;
 @property (weak) IBOutlet NSTextField *type;
-@property (weak) IBOutlet NSTextField *md5;
-@property (weak) IBOutlet NSTextField *sha;
 @property (weak) IBOutlet NSTextField *url;
+@property (weak) IBOutlet NSImageView *status;
+@property (weak) IBOutlet NSImageView *status2;
+@property (unsafe_unretained) IBOutlet NSPanel *panel;
+@property (weak) IBOutlet NSProgressIndicator *progres;
 
+- (IBAction)openLink:(id)sender;
 - (IBAction)connexion:(id)sender;
 - (IBAction)sauvegarder:(id)sender;
 - (IBAction)chooseFile:(id)sender;
